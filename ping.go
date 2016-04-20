@@ -17,7 +17,7 @@ package mqtt
 import (
 	"errors"
 
-	"git.eclipse.org/gitroot/paho/org.eclipse.paho.mqtt.golang.git/packets"
+	"github.com/contactless/org.eclipse.paho.mqtt.golang/packets"
 )
 
 func keepalive(c *Client) {

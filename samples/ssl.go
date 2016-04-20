@@ -45,7 +45,7 @@ import "fmt"
 import "time"
 import "crypto/tls"
 import "crypto/x509"
-import MQTT "git.eclipse.org/gitroot/paho/org.eclipse.paho.mqtt.golang.git"
+import MQTT "github.com/contactless/org.eclipse.paho.mqtt.golang"
 
 func NewTLSConfig() *tls.Config {
 	// Import trusted certificates from CAfile.pem.

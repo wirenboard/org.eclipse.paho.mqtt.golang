@@ -26,7 +26,7 @@ import (
 	"time"
 )
 
-import MQTT "git.eclipse.org/gitroot/paho/org.eclipse.paho.mqtt.golang.git"
+import MQTT "github.com/contactless/org.eclipse.paho.mqtt.golang"
 
 func main() {
 	//MQTT.DEBUG = log.New(os.Stdout, "", 0)
