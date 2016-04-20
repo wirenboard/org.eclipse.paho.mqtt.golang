@@ -2,13 +2,12 @@ package packets
 
 import (
 	"fmt"
-	"io"
 )
 
 //UnsubackPacket is an internal representation of the fields of the
 //Unsuback MQTT packet
 type UnsubackPacket struct {
-	FixedHeader
+	*FixedHeader
 	MessageID uint16
 }
 
@@ -18,7 +17,7 @@ func (ua *UnsubackPacket) String() string {
 	return str
 }
 
-func (ua *UnsubackPacket) Write(w io.Writer) error {
+func (ua *UnsubackPacket) Write(w PacketWriter) error {
 	var err error
 	ua.FixedHeader.RemainingLength = 2
 	packet := ua.FixedHeader.pack()
@@ -30,8 +29,8 @@ func (ua *UnsubackPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (ua *UnsubackPacket) Unpack(b io.Reader) {
-	ua.MessageID = decodeUint16(b)
+func (ua *UnsubackPacket) Unpack(src []byte) {
+	ua.MessageID = loadUint16(src)
 }
 
 //Details returns a Details struct containing the Qos and

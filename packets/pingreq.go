@@ -2,13 +2,12 @@ package packets
 
 import (
 	"fmt"
-	"io"
 )
 
 //PingreqPacket is an internal representation of the fields of the
 //Pingreq MQTT packet
 type PingreqPacket struct {
-	FixedHeader
+	*FixedHeader
 }
 
 func (pr *PingreqPacket) String() string {
@@ -16,7 +15,7 @@ func (pr *PingreqPacket) String() string {
 	return str
 }
 
-func (pr *PingreqPacket) Write(w io.Writer) error {
+func (pr *PingreqPacket) Write(w PacketWriter) error {
 	packet := pr.FixedHeader.pack()
 	_, err := packet.WriteTo(w)
 
@@ -25,7 +24,7 @@ func (pr *PingreqPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (pr *PingreqPacket) Unpack(b io.Reader) {
+func (pr *PingreqPacket) Unpack(src []byte) {
 }
 
 //Details returns a Details struct containing the Qos and

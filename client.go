@@ -16,8 +16,10 @@
 package mqtt
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -175,7 +177,9 @@ func (c *Client) Connect() Token {
 					cm.ProtocolName = "MQTT"
 					cm.ProtocolVersion = 4
 				}
-				cm.Write(c.conn)
+				w := bufio.NewWriter(c.conn)
+				cm.Write(w)
+				w.Flush()
 
 				rc = c.connect()
 				if rc != packets.Accepted {
@@ -287,7 +291,9 @@ func (c *Client) reconnect() {
 					cm.ProtocolName = "MQTT"
 					cm.ProtocolVersion = 4
 				}
-				cm.Write(c.conn)
+				w := bufio.NewWriter(c.conn)
+				cm.Write(w)
+				w.Flush()
 
 				rc = c.connect()
 				if rc != packets.Accepted {
@@ -341,6 +347,18 @@ func (c *Client) reconnect() {
 	go incoming(c)
 }
 
+type ConnectPacketReader struct {
+	io.Reader
+}
+
+func (cpr ConnectPacketReader) ReadByte() (byte, error) {
+	// that's done just once after connection, so no need for
+	// optimization
+	var b [1]byte
+	_, err := io.ReadFull(cpr, b[:])
+	return b[0], err
+}
+
 // This function is only used for receiving a connack
 // when the connection is first started.
 // This prevents receiving incoming data while resume
@@ -348,7 +366,7 @@ func (c *Client) reconnect() {
 func (c *Client) connect() byte {
 	DEBUG.Println(NET, "connect started")
 
-	ca, err := packets.ReadPacket(c.conn)
+	ca, err := packets.ReadPacket(ConnectPacketReader{c.conn})
 	if err != nil {
 		ERROR.Println(NET, "connect got error", err)
 		return packets.ErrNetworkError
@@ -447,7 +465,7 @@ func (c *Client) Publish(topic string, qos byte, retained bool, payload interfac
 	}
 	pub := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pub.Qos = qos
-	pub.TopicName = topic
+	pub.TopicName = []byte(topic)
 	pub.Retain = retained
 	switch payload.(type) {
 	case string:

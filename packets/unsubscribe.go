@@ -3,13 +3,12 @@ package packets
 import (
 	"bytes"
 	"fmt"
-	"io"
 )
 
 //UnsubscribePacket is an internal representation of the fields of the
 //Unsubscribe MQTT packet
 type UnsubscribePacket struct {
-	FixedHeader
+	*FixedHeader
 	MessageID uint16
 	Topics    []string
 }
@@ -20,7 +19,7 @@ func (u *UnsubscribePacket) String() string {
 	return str
 }
 
-func (u *UnsubscribePacket) Write(w io.Writer) error {
+func (u *UnsubscribePacket) Write(w PacketWriter) error {
 	var body bytes.Buffer
 	var err error
 	body.Write(encodeUint16(u.MessageID))
@@ -37,11 +36,13 @@ func (u *UnsubscribePacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (u *UnsubscribePacket) Unpack(b io.Reader) {
-	u.MessageID = decodeUint16(b)
+func (u *UnsubscribePacket) Unpack(src []byte) {
+	u.MessageID = loadUint16(src)
 	var topic string
-	for topic = decodeString(b); topic != ""; topic = decodeString(b) {
+	var end int
+	for topic, end = loadString(src); topic != ""; topic, end = loadString(src) {
 		u.Topics = append(u.Topics, topic)
+		src = src[end:]
 	}
 }
 

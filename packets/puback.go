@@ -2,13 +2,12 @@ package packets
 
 import (
 	"fmt"
-	"io"
 )
 
 //PubackPacket is an internal representation of the fields of the
 //Puback MQTT packet
 type PubackPacket struct {
-	FixedHeader
+	*FixedHeader
 	MessageID uint16
 }
 
@@ -18,7 +17,7 @@ func (pa *PubackPacket) String() string {
 	return str
 }
 
-func (pa *PubackPacket) Write(w io.Writer) error {
+func (pa *PubackPacket) Write(w PacketWriter) error {
 	var err error
 	pa.FixedHeader.RemainingLength = 2
 	packet := pa.FixedHeader.pack()
@@ -30,8 +29,8 @@ func (pa *PubackPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (pa *PubackPacket) Unpack(b io.Reader) {
-	pa.MessageID = decodeUint16(b)
+func (pa *PubackPacket) Unpack(src []byte) {
+	pa.MessageID = loadUint16(src)
 }
 
 //Details returns a Details struct containing the Qos and

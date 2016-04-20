@@ -64,13 +64,15 @@ func (m *message) Payload() []byte {
 }
 
 func messageFromPublish(p *packets.PublishPacket) Message {
+	copiedPayload := make([]byte, len(p.Payload))
+	copy(copiedPayload, p.Payload)
 	return &message{
 		duplicate: p.Dup,
 		qos:       p.Qos,
 		retained:  p.Retain,
-		topic:     p.TopicName,
+		topic:     string(p.TopicName),
 		messageID: p.MessageID,
-		payload:   p.Payload,
+		payload:   copiedPayload,
 	}
 }
 

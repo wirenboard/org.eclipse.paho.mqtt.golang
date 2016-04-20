@@ -3,14 +3,14 @@ package packets
 import (
 	"bytes"
 	"fmt"
-	"io"
+	// "log"
 )
 
 //PublishPacket is an internal representation of the fields of the
 //Publish MQTT packet
 type PublishPacket struct {
-	FixedHeader
-	TopicName string
+	*FixedHeader
+	TopicName []byte
 	MessageID uint16
 	Payload   []byte
 }
@@ -22,11 +22,11 @@ func (p *PublishPacket) String() string {
 	return str
 }
 
-func (p *PublishPacket) Write(w io.Writer) error {
+func (p *PublishPacket) Write(w PacketWriter) error {
 	var body bytes.Buffer
 	var err error
 
-	body.Write(encodeString(p.TopicName))
+	body.Write(p.encodeBytes(p.TopicName))
 	if p.Qos > 0 {
 		body.Write(encodeUint16(p.MessageID))
 	}
@@ -41,17 +41,15 @@ func (p *PublishPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (p *PublishPacket) Unpack(b io.Reader) {
-	var payloadLength = p.FixedHeader.RemainingLength
-	p.TopicName = decodeString(b)
+func (p *PublishPacket) Unpack(src []byte) {
+	var end int
+	p.TopicName, end = loadBytes(src)
+	src = src[end:]
 	if p.Qos > 0 {
-		p.MessageID = decodeUint16(b)
-		payloadLength -= len(p.TopicName) + 4
-	} else {
-		payloadLength -= len(p.TopicName) + 2
+		p.MessageID = loadUint16(src)
+		src = src[2:]
 	}
-	p.Payload = make([]byte, payloadLength)
-	b.Read(p.Payload)
+	p.Payload = src
 }
 
 //Copy creates a new PublishPacket with the same topic and payload

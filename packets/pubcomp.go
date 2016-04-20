@@ -2,13 +2,12 @@ package packets
 
 import (
 	"fmt"
-	"io"
 )
 
 //PubcompPacket is an internal representation of the fields of the
 //Pubcomp MQTT packet
 type PubcompPacket struct {
-	FixedHeader
+	*FixedHeader
 	MessageID uint16
 }
 
@@ -18,7 +17,7 @@ func (pc *PubcompPacket) String() string {
 	return str
 }
 
-func (pc *PubcompPacket) Write(w io.Writer) error {
+func (pc *PubcompPacket) Write(w PacketWriter) error {
 	var err error
 	pc.FixedHeader.RemainingLength = 2
 	packet := pc.FixedHeader.pack()
@@ -30,8 +29,8 @@ func (pc *PubcompPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (pc *PubcompPacket) Unpack(b io.Reader) {
-	pc.MessageID = decodeUint16(b)
+func (pc *PubcompPacket) Unpack(src []byte) {
+	pc.MessageID = loadUint16(src)
 }
 
 //Details returns a Details struct containing the Qos and

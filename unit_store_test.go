@@ -111,7 +111,7 @@ func Test_persistOutbound_publish_0(t *testing.T) {
 	ts := &TestStore{}
 	m := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	m.Qos = 0
-	m.TopicName = "/popub0"
+	m.TopicName = []byte("/popub0")
 	m.Payload = []byte{0xBB, 0x00}
 	m.MessageID = 40
 	persistOutbound(ts, m)
@@ -133,7 +133,7 @@ func Test_persistOutbound_publish_1(t *testing.T) {
 	ts := &TestStore{}
 	m := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	m.Qos = 1
-	m.TopicName = "/popub1"
+	m.TopicName = []byte("/popub1")
 	m.Payload = []byte{0xBB, 0x00}
 	m.MessageID = 41
 	persistOutbound(ts, m)
@@ -155,7 +155,7 @@ func Test_persistOutbound_publish_2(t *testing.T) {
 	ts := &TestStore{}
 	m := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	m.Qos = 2
-	m.TopicName = "/popub2"
+	m.TopicName = []byte("/popub2")
 	m.Payload = []byte{0xBB, 0x00}
 	m.MessageID = 42
 	persistOutbound(ts, m)
@@ -350,7 +350,7 @@ func Test_persistInbound_publish_0(t *testing.T) {
 	ts := &TestStore{}
 	m := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	m.Qos = 0
-	m.TopicName = "/pipub0"
+	m.TopicName = []byte("/pipub0")
 	m.Payload = []byte{0xCC, 0x01}
 	m.MessageID = 50
 	persistInbound(ts, m)
@@ -372,7 +372,7 @@ func Test_persistInbound_publish_1(t *testing.T) {
 	ts := &TestStore{}
 	m := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	m.Qos = 1
-	m.TopicName = "/pipub1"
+	m.TopicName = []byte("/pipub1")
 	m.Payload = []byte{0xCC, 0x02}
 	m.MessageID = 51
 	persistInbound(ts, m)
@@ -394,7 +394,7 @@ func Test_persistInbound_publish_2(t *testing.T) {
 	ts := &TestStore{}
 	m := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	m.Qos = 2
-	m.TopicName = "/pipub2"
+	m.TopicName = []byte("/pipub2")
 	m.Payload = []byte{0xCC, 0x03}
 	m.MessageID = 52
 	persistInbound(ts, m)
@@ -416,7 +416,7 @@ func Test_persistInbound_puback(t *testing.T) {
 	ts := &TestStore{}
 	pub := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pub.Qos = 1
-	pub.TopicName = "/pub1"
+	pub.TopicName = []byte("/pub1")
 	pub.Payload = []byte{0xCC, 0x04}
 	pub.MessageID = 53
 	publishKey := inboundKeyFromMID(pub.MessageID)
@@ -444,7 +444,7 @@ func Test_persistInbound_pubrec(t *testing.T) {
 	ts := &TestStore{}
 	pub := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pub.Qos = 2
-	pub.TopicName = "/pub2"
+	pub.TopicName = []byte("/pub2")
 	pub.Payload = []byte{0xCC, 0x05}
 	pub.MessageID = 54
 	publishKey := inboundKeyFromMID(pub.MessageID)
@@ -472,7 +472,7 @@ func Test_persistInbound_pubrel(t *testing.T) {
 	ts := &TestStore{}
 	pub := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pub.Qos = 2
-	pub.TopicName = "/pub2"
+	pub.TopicName = []byte("/pub2")
 	pub.Payload = []byte{0xCC, 0x06}
 	pub.MessageID = 55
 	publishKey := inboundKeyFromMID(pub.MessageID)

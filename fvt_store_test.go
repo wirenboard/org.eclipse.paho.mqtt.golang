@@ -136,7 +136,7 @@ func Test_FileStore_write(t *testing.T) {
 
 	pm := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm.Qos = 1
-	pm.TopicName = "a/b/c"
+	pm.TopicName = []byte("a/b/c")
 	pm.Payload = []byte{0xBE, 0xEF, 0xED}
 	pm.MessageID = 91
 
@@ -155,7 +155,7 @@ func Test_FileStore_Get(t *testing.T) {
 	f.Open()
 	pm := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm.Qos = 1
-	pm.TopicName = "/a/b/c"
+	pm.TopicName = []byte("/a/b/c")
 	pm.Payload = []byte{0xBE, 0xEF, 0xED}
 	pm.MessageID = 120
 
@@ -212,7 +212,7 @@ func Test_FileStore_All(t *testing.T) {
 	f.Open()
 	pm := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm.Qos = 2
-	pm.TopicName = "/t/r/v"
+	pm.TopicName = []byte("/t/r/v")
 	pm.Payload = []byte{0x01, 0x02}
 	pm.MessageID = 121
 
@@ -236,7 +236,7 @@ func Test_FileStore_Del(t *testing.T) {
 
 	pm := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm.Qos = 1
-	pm.TopicName = "a/b/c"
+	pm.TopicName = []byte("a/b/c")
 	pm.Payload = []byte{0xBE, 0xEF, 0xED}
 	pm.MessageID = 17
 
@@ -261,7 +261,7 @@ func Test_FileStore_Reset(t *testing.T) {
 
 	pm1 := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm1.Qos = 1
-	pm1.TopicName = "/q/w/e"
+	pm1.TopicName = []byte("/q/w/e")
 	pm1.Payload = []byte{0xBB}
 	pm1.MessageID = 71
 	key1 := inboundKeyFromMID(pm1.MessageID)
@@ -269,7 +269,7 @@ func Test_FileStore_Reset(t *testing.T) {
 
 	pm2 := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm2.Qos = 1
-	pm2.TopicName = "/q/w/e"
+	pm2.TopicName = []byte("/q/w/e")
 	pm2.Payload = []byte{0xBB}
 	pm2.MessageID = 72
 	key2 := inboundKeyFromMID(pm2.MessageID)
@@ -277,7 +277,7 @@ func Test_FileStore_Reset(t *testing.T) {
 
 	pm3 := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm3.Qos = 1
-	pm3.TopicName = "/q/w/e"
+	pm3.TopicName = []byte("/q/w/e")
 	pm3.Payload = []byte{0xBB}
 	pm3.MessageID = 73
 	key3 := inboundKeyFromMID(pm3.MessageID)
@@ -285,7 +285,7 @@ func Test_FileStore_Reset(t *testing.T) {
 
 	pm4 := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm4.Qos = 1
-	pm4.TopicName = "/q/w/e"
+	pm4.TopicName = []byte("/q/w/e")
 	pm4.Payload = []byte{0xBB}
 	pm4.MessageID = 74
 	key4 := inboundKeyFromMID(pm4.MessageID)
@@ -293,7 +293,7 @@ func Test_FileStore_Reset(t *testing.T) {
 
 	pm5 := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm5.Qos = 1
-	pm5.TopicName = "/q/w/e"
+	pm5.TopicName = []byte("/q/w/e")
 	pm5.Payload = []byte{0xBB}
 	pm5.MessageID = 75
 	key5 := inboundKeyFromMID(pm5.MessageID)
@@ -380,7 +380,7 @@ func Test_MemoryStore_Reset(t *testing.T) {
 
 	pm := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm.Qos = 2
-	pm.TopicName = "/f/r/s"
+	pm.TopicName = []byte("/f/r/s")
 	pm.Payload = []byte{0xAB}
 	pm.MessageID = 81
 
@@ -404,7 +404,7 @@ func Test_MemoryStore_write(t *testing.T) {
 
 	pm := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm.Qos = 1
-	pm.TopicName = "/a/b/c"
+	pm.TopicName = []byte("/a/b/c")
 	pm.Payload = []byte{0xBE, 0xEF, 0xED}
 	pm.MessageID = 91
 	key := inboundKeyFromMID(pm.MessageID)
@@ -420,7 +420,7 @@ func Test_MemoryStore_Get(t *testing.T) {
 	m.Open()
 	pm := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm.Qos = 1
-	pm.TopicName = "/a/b/c"
+	pm.TopicName = []byte("/a/b/c")
 	pm.Payload = []byte{0xBE, 0xEF, 0xED}
 	pm.MessageID = 120
 
@@ -477,7 +477,7 @@ func Test_MemoryStore_Del(t *testing.T) {
 
 	pm := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pm.Qos = 1
-	pm.TopicName = "/a/b/c"
+	pm.TopicName = []byte("/a/b/c")
 	pm.Payload = []byte{0xBE, 0xEF, 0xED}
 	pm.MessageID = 17
 

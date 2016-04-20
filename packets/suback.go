@@ -3,13 +3,12 @@ package packets
 import (
 	"bytes"
 	"fmt"
-	"io"
 )
 
 //SubackPacket is an internal representation of the fields of the
 //Suback MQTT packet
 type SubackPacket struct {
-	FixedHeader
+	*FixedHeader
 	MessageID   uint16
 	GrantedQoss []byte
 }
@@ -20,7 +19,7 @@ func (sa *SubackPacket) String() string {
 	return str
 }
 
-func (sa *SubackPacket) Write(w io.Writer) error {
+func (sa *SubackPacket) Write(w PacketWriter) error {
 	var body bytes.Buffer
 	var err error
 	body.Write(encodeUint16(sa.MessageID))
@@ -35,11 +34,13 @@ func (sa *SubackPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (sa *SubackPacket) Unpack(b io.Reader) {
-	var qosBuffer bytes.Buffer
-	sa.MessageID = decodeUint16(b)
-	qosBuffer.ReadFrom(b)
-	sa.GrantedQoss = qosBuffer.Bytes()
+func (sa *SubackPacket) Unpack(src []byte) {
+	sa.MessageID = loadUint16(src)
+	if len(src) < 2 {
+		sa.GrantedQoss = make([]byte, 0) // FIXME: error
+	} else {
+		sa.GrantedQoss = src[2:]
+	}
 }
 
 //Details returns a Details struct containing the Qos and

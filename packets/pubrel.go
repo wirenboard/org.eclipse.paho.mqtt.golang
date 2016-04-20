@@ -2,13 +2,12 @@ package packets
 
 import (
 	"fmt"
-	"io"
 )
 
 //PubrelPacket is an internal representation of the fields of the
 //Pubrel MQTT packet
 type PubrelPacket struct {
-	FixedHeader
+	*FixedHeader
 	MessageID uint16
 }
 
@@ -18,7 +17,7 @@ func (pr *PubrelPacket) String() string {
 	return str
 }
 
-func (pr *PubrelPacket) Write(w io.Writer) error {
+func (pr *PubrelPacket) Write(w PacketWriter) error {
 	var err error
 	pr.FixedHeader.RemainingLength = 2
 	packet := pr.FixedHeader.pack()
@@ -30,8 +29,8 @@ func (pr *PubrelPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (pr *PubrelPacket) Unpack(b io.Reader) {
-	pr.MessageID = decodeUint16(b)
+func (pr *PubrelPacket) Unpack(src []byte) {
+	pr.MessageID = loadUint16(src)
 }
 
 //Details returns a Details struct containing the Qos and

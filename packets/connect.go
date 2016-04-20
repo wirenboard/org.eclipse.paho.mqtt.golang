@@ -3,13 +3,12 @@ package packets
 import (
 	"bytes"
 	"fmt"
-	"io"
 )
 
 //ConnectPacket is an internal representation of the fields of the
 //Connect MQTT packet
 type ConnectPacket struct {
-	FixedHeader
+	*FixedHeader
 	ProtocolName    string
 	ProtocolVersion byte
 	CleanSession    bool
@@ -34,7 +33,7 @@ func (c *ConnectPacket) String() string {
 	return str
 }
 
-func (c *ConnectPacket) Write(w io.Writer) error {
+func (c *ConnectPacket) Write(w PacketWriter) error {
 	var body bytes.Buffer
 	var err error
 
@@ -63,10 +62,14 @@ func (c *ConnectPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (c *ConnectPacket) Unpack(b io.Reader) {
-	c.ProtocolName = decodeString(b)
-	c.ProtocolVersion = decodeByte(b)
-	options := decodeByte(b)
+func (c *ConnectPacket) Unpack(src []byte) {
+	var end int
+	c.ProtocolName, end = loadString(src)
+	src = src[end:]
+	c.ProtocolVersion = loadByte(src)
+	src = src[1:]
+	options := loadByte(src)
+	src = src[1:]
 	c.ReservedBit = 1 & options
 	c.CleanSession = 1&(options>>1) > 0
 	c.WillFlag = 1&(options>>2) > 0
@@ -74,17 +77,23 @@ func (c *ConnectPacket) Unpack(b io.Reader) {
 	c.WillRetain = 1&(options>>5) > 0
 	c.PasswordFlag = 1&(options>>6) > 0
 	c.UsernameFlag = 1&(options>>7) > 0
-	c.KeepaliveTimer = decodeUint16(b)
-	c.ClientIdentifier = decodeString(b)
+	c.KeepaliveTimer = loadUint16(src)
+	src = src[2:]
+	c.ClientIdentifier, end = loadString(src)
+	src = src[end:]
+
 	if c.WillFlag {
-		c.WillTopic = decodeString(b)
-		c.WillMessage = decodeBytes(b)
+		c.WillTopic, end = loadString(src)
+		src = src[end:]
+		c.WillMessage, end = loadBytes(src)
+		src = src[end:]
 	}
 	if c.UsernameFlag {
-		c.Username = decodeString(b)
+		c.Username, end = loadString(src)
+		src = src[end:]
 	}
 	if c.PasswordFlag {
-		c.Password = decodeBytes(b)
+		c.Password, _ = loadBytes(src)
 	}
 }
 

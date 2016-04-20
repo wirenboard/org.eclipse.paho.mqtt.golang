@@ -3,13 +3,12 @@ package packets
 import (
 	"bytes"
 	"fmt"
-	"io"
 )
 
 //ConnackPacket is an internal representation of the fields of the
 //Connack MQTT packet
 type ConnackPacket struct {
-	FixedHeader
+	*FixedHeader
 	TopicNameCompression byte
 	ReturnCode           byte
 }
@@ -20,7 +19,7 @@ func (ca *ConnackPacket) String() string {
 	return str
 }
 
-func (ca *ConnackPacket) Write(w io.Writer) error {
+func (ca *ConnackPacket) Write(w PacketWriter) error {
 	var body bytes.Buffer
 	var err error
 
@@ -36,9 +35,11 @@ func (ca *ConnackPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (ca *ConnackPacket) Unpack(b io.Reader) {
-	ca.TopicNameCompression = decodeByte(b)
-	ca.ReturnCode = decodeByte(b)
+func (ca *ConnackPacket) Unpack(src []byte) {
+	if len(src) >= 2 {
+		ca.TopicNameCompression = src[0]
+		ca.ReturnCode = src[1]
+	}
 }
 
 //Details returns a Details struct containing the Qos and

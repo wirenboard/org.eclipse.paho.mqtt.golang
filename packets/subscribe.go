@@ -3,13 +3,12 @@ package packets
 import (
 	"bytes"
 	"fmt"
-	"io"
 )
 
 //SubscribePacket is an internal representation of the fields of the
 //Subscribe MQTT packet
 type SubscribePacket struct {
-	FixedHeader
+	*FixedHeader
 	MessageID uint16
 	Topics    []string
 	Qoss      []byte
@@ -21,7 +20,7 @@ func (s *SubscribePacket) String() string {
 	return str
 }
 
-func (s *SubscribePacket) Write(w io.Writer) error {
+func (s *SubscribePacket) Write(w PacketWriter) error {
 	var body bytes.Buffer
 	var err error
 
@@ -40,15 +39,22 @@ func (s *SubscribePacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (s *SubscribePacket) Unpack(b io.Reader) {
-	s.MessageID = decodeUint16(b)
-	payloadLength := s.FixedHeader.RemainingLength - 2
-	for payloadLength > 0 {
-		topic := decodeString(b)
+func (s *SubscribePacket) Unpack(src []byte) {
+	s.MessageID = loadUint16(src)
+	if len(src) < 2 {
+		return // FIXME: error
+	}
+	src = src[2:]
+	for len(src) > 2 {
+		topic, end := loadString(src)
+		src = src[end:]
+		if len(src) < 1 {
+			break // FIXME: error
+		}
 		s.Topics = append(s.Topics, topic)
-		qos := decodeByte(b)
+		qos := loadByte(src)
+		src = src[1:]
 		s.Qoss = append(s.Qoss, qos)
-		payloadLength -= 2 + len(topic) + 1 //2 bytes of string length, plus string, plus 1 byte for Qos
 	}
 }
 

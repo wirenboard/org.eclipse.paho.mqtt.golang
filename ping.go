@@ -15,6 +15,7 @@
 package mqtt
 
 import (
+	"bufio"
 	"errors"
 
 	"github.com/contactless/org.eclipse.paho.mqtt.golang/packets"
@@ -34,7 +35,9 @@ func keepalive(c *Client) {
 			ping := packets.NewControlPacket(packets.Pingreq).(*packets.PingreqPacket)
 			//We don't want to wait behind large messages being sent, the Write call
 			//will block until it it able to send the packet.
-			ping.Write(c.conn)
+			w := bufio.NewWriter(c.conn)
+			ping.Write(w)
+			w.Flush()
 			c.pingRespTimer.Reset(c.options.PingTimeout)
 		case <-c.pingRespTimer.C:
 			CRITICAL.Println(PNG, "pingresp not received, disconnecting")

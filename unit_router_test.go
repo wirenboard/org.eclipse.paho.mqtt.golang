@@ -62,7 +62,7 @@ func Test_Match(t *testing.T) {
 func Test_match(t *testing.T) {
 
 	check := func(route, topic string, exp bool) {
-		result := routeIncludesTopic(route, topic)
+		result := routeIncludesTopic([]byte(route), []byte(topic))
 		if exp != result {
 			t.Errorf("match was bad R: %v, T: %v, EXP: %v", route, topic, exp)
 		}
@@ -263,7 +263,7 @@ func Test_MatchAndDispatch(t *testing.T) {
 
 	pub := packets.NewControlPacket(packets.Publish).(*packets.PublishPacket)
 	pub.Qos = 2
-	pub.TopicName = "a"
+	pub.TopicName = []byte("a")
 	pub.Payload = []byte("foo")
 
 	msgs := make(chan *packets.PublishPacket)

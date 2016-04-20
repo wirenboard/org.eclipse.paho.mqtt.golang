@@ -15,6 +15,7 @@
 package mqtt
 
 import (
+	"bufio"
 	"crypto/tls"
 	"errors"
 	"net"
@@ -24,6 +25,10 @@ import (
 
 	"github.com/contactless/org.eclipse.paho.mqtt.golang/packets"
 	"golang.org/x/net/websocket"
+)
+
+const (
+	IN_BUF_SIZE = 32768
 )
 
 func openConnection(uri *url.URL, tlsc *tls.Config, timeout time.Duration) (net.Conn, error) {
@@ -65,6 +70,13 @@ func openConnection(uri *url.URL, tlsc *tls.Config, timeout time.Duration) (net.
 	return nil, errors.New("Unknown protocol")
 }
 
+var packetsSent = 0
+var packetsReceived = 0
+
+func GetStats() (int, int) {
+	return packetsSent, packetsReceived
+}
+
 // actually read incoming messages off the wire
 // send Message object into ibound channel
 func incoming(c *Client) {
@@ -74,13 +86,15 @@ func incoming(c *Client) {
 
 	DEBUG.Println(NET, "incoming started")
 
+	reader := bufio.NewReaderSize(c.conn, IN_BUF_SIZE)
 	for {
-		if cp, err = packets.ReadPacket(c.conn); err != nil {
+		if cp, err = packets.ReadPacket(reader); err != nil {
 			break
 		}
 		if debugActive() {
 			DEBUG.Println(NET, "Received Message")
 		}
+		packetsReceived += 1
 		c.ibound <- cp
 	}
 	// We received an error on read.
@@ -103,6 +117,7 @@ func outgoing(c *Client) {
 	defer c.workers.Done()
 	DEBUG.Println(NET, "outgoing started")
 
+	writer := bufio.NewWriter(c.conn)
 	for {
 		if debugActive() {
 			DEBUG.Println(NET, "outgoing waiting for an outbound message")
@@ -123,9 +138,14 @@ func outgoing(c *Client) {
 				c.conn.SetWriteDeadline(time.Now().Add(c.options.WriteTimeout))
 			}
 
-			if err := msg.Write(c.conn); err != nil {
+			err := msg.Write(writer)
+			if err == nil {
+				err = writer.Flush()
+			}
+			if err != nil {
 				ERROR.Println(NET, "outgoing stopped with error")
 				c.errors <- err
+				msg.Release()
 				return
 			}
 
@@ -141,6 +161,8 @@ func outgoing(c *Client) {
 			if debugActive() {
 				DEBUG.Println(NET, "obound wrote msg, id:", msg.MessageID)
 			}
+			msg.Release()
+			packetsSent += 1
 		case msg := <-c.oboundP:
 			switch msg.p.(type) {
 			case *packets.SubscribePacket:
@@ -148,10 +170,15 @@ func outgoing(c *Client) {
 			case *packets.UnsubscribePacket:
 				msg.p.(*packets.UnsubscribePacket).MessageID = c.getID(msg.t)
 			}
-			if err := msg.p.Write(c.conn); err != nil {
 			if debugActive() {
 				DEBUG.Println(NET, "obound priority msg to write, type", reflect.TypeOf(msg.p))
 			}
+			err := msg.p.Write(writer)
+			msg.p.Release()
+			if err == nil {
+				writer.Flush()
+			}
+			if err != nil {
 				ERROR.Println(NET, "outgoing stopped with error")
 				c.errors <- err
 				return
@@ -164,6 +191,7 @@ func outgoing(c *Client) {
 				}
 				return
 			}
+			packetsSent += 1
 		}
 		// Reset ping timer after sending control packet.
 		c.pingTimer.Reset(c.options.KeepAlive)
@@ -196,6 +224,7 @@ func alllogic(c *Client) {
 				}
 				c.pingRespTimer.Stop()
 				c.pingTimer.Reset(c.options.PingTimeout)
+				msg.Release()
 			case *packets.SubackPacket:
 				sa := msg.(*packets.SubackPacket)
 				if debugActive() {
@@ -210,6 +239,7 @@ func alllogic(c *Client) {
 				}
 				token.flowComplete()
 				go c.freeID(sa.MessageID)
+				msg.Release()
 			case *packets.UnsubackPacket:
 				ua := msg.(*packets.UnsubackPacket)
 				if debugActive() {
@@ -218,6 +248,7 @@ func alllogic(c *Client) {
 				token := c.getToken(ua.MessageID).(*UnsubscribeToken)
 				token.flowComplete()
 				go c.freeID(ua.MessageID)
+				msg.Release()
 			case *packets.PublishPacket:
 				pp := msg.(*packets.PublishPacket)
 				if debugActive() {
@@ -272,6 +303,8 @@ func alllogic(c *Client) {
 						}
 					}
 				}
+				// publish messages aren't released because they are used in another
+				// goroutine
 			case *packets.PubackPacket:
 				pa := msg.(*packets.PubackPacket)
 				if debugActive() {
@@ -281,6 +314,7 @@ func alllogic(c *Client) {
 				// c.receipts.end(msg.MsgId())
 				c.getToken(pa.MessageID).flowComplete()
 				c.freeID(pa.MessageID)
+				msg.Release()
 			case *packets.PubrecPacket:
 				prec := msg.(*packets.PubrecPacket)
 				if debugActive() {
@@ -292,6 +326,7 @@ func alllogic(c *Client) {
 				case c.oboundP <- &PacketAndToken{p: prel, t: nil}:
 				case <-time.After(time.Second):
 				}
+				msg.Release()
 			case *packets.PubrelPacket:
 				pr := msg.(*packets.PubrelPacket)
 				if debugActive() {
@@ -303,6 +338,7 @@ func alllogic(c *Client) {
 				case c.oboundP <- &PacketAndToken{p: pc, t: nil}:
 				case <-time.After(time.Second):
 				}
+				msg.Release()
 			case *packets.PubcompPacket:
 				pc := msg.(*packets.PubcompPacket)
 				if debugActive() {
@@ -310,6 +346,7 @@ func alllogic(c *Client) {
 				}
 				c.getToken(pc.MessageID).flowComplete()
 				c.freeID(pc.MessageID)
+				msg.Release()
 			}
 		case <-c.stop:
 			WARN.Println(NET, "logic stopped")

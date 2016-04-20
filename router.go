@@ -16,7 +16,6 @@ package mqtt
 
 import (
 	"container/list"
-	"strings"
 	"sync"
 
 	"github.com/contactless/org.eclipse.paho.mqtt.golang/packets"
@@ -26,49 +25,47 @@ import (
 // callback to be executed upon the arrival of a message associated
 // with a subscription to that topic.
 type route struct {
-	topic    string
-	callback MessageHandler
+	topicBytes []byte
+	callback   MessageHandler
 }
 
-// match takes a slice of strings which represent the route being tested having been split on '/'
-// separators, and a slice of strings representing the topic string in the published message, similarly
-// split.
-// The function determines if the topic string matches the route according to the MQTT topic rules
-// and returns a boolean of the outcome
-func match(route []string, topic []string) bool {
-	if len(route) == 0 {
-		if len(topic) == 0 {
+func routeIncludesTopic(route, topic []byte) bool {
+	// return match(splitTopicMemoized(route), splitTopicMemoized(topic))
+	lr := len(route)
+	lt := len(topic)
+	if lr == 0 {
+		return lt == 0
+	}
+	if lt == 0 {
+		return len(route) == 1 && route[0] == '#'
+	}
+	tp := 0
+	for rp := 0; rp < lr; rp += 1 {
+		if route[rp] == '#' {
 			return true
 		}
-		return false
-	}
-
-	if len(topic) == 0 {
-		if route[0] == "#" {
-			return true
+		if route[rp] == '+' {
+			for tp < lt && topic[tp] != '/' {
+				tp += 1
+			}
+			continue
 		}
-		return false
+		if tp == lt || route[rp] != topic[tp] {
+			return false
+		}
+		tp += 1
 	}
-
-	if route[0] == "#" {
-		return true
-	}
-
-	if (route[0] == "+") || (route[0] == topic[0]) {
-		return match(route[1:], topic[1:])
-	}
-
-	return false
-}
-
-func routeIncludesTopic(route, topic string) bool {
-	return match(strings.Split(route, "/"), strings.Split(topic, "/"))
+	return tp == lt
 }
 
 // match takes the topic string of the published message and does a basic compare to the
 // string of the current Route, if they match it returns true
 func (r *route) match(topic string) bool {
-	return r.topic == topic || routeIncludesTopic(r.topic, topic)
+	return string(r.topicBytes) == topic || routeIncludesTopic(r.topicBytes, []byte(topic))
+}
+
+func (r *route) matchBytes(topic []byte) bool {
+	return routeIncludesTopic(r.topicBytes, topic)
 }
 
 type router struct {
@@ -100,7 +97,7 @@ func (r *router) addRoute(topic string, callback MessageHandler) {
 			return
 		}
 	}
-	r.routes.PushBack(&route{topic: topic, callback: callback})
+	r.routes.PushBack(&route{topicBytes: []byte(topic), callback: callback})
 }
 
 // deleteRoute takes a route string, looks for a matching Route in the list of Routes. If
@@ -134,7 +131,7 @@ func (r *router) matchAndDispatch(messages <-chan *packets.PublishPacket, order 
 				sent := false
 				r.RLock()
 				for e := r.routes.Front(); e != nil; e = e.Next() {
-					if e.Value.(*route).match(message.TopicName) {
+					if e.Value.(*route).matchBytes(message.TopicName) {
 						if order {
 							r.RUnlock()
 							e.Value.(*route).callback(client, messageFromPublish(message))
@@ -155,6 +152,7 @@ func (r *router) matchAndDispatch(messages <-chan *packets.PublishPacket, order 
 						go r.defaultHandler(client, messageFromPublish(message))
 					}
 				}
+				message.Release()
 			case <-r.stop:
 				return
 			}

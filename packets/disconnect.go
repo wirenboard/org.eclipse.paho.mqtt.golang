@@ -2,13 +2,12 @@ package packets
 
 import (
 	"fmt"
-	"io"
 )
 
 //DisconnectPacket is an internal representation of the fields of the
 //Disconnect MQTT packet
 type DisconnectPacket struct {
-	FixedHeader
+	*FixedHeader
 }
 
 func (d *DisconnectPacket) String() string {
@@ -16,7 +15,7 @@ func (d *DisconnectPacket) String() string {
 	return str
 }
 
-func (d *DisconnectPacket) Write(w io.Writer) error {
+func (d *DisconnectPacket) Write(w PacketWriter) error {
 	packet := d.FixedHeader.pack()
 	_, err := packet.WriteTo(w)
 
@@ -25,7 +24,7 @@ func (d *DisconnectPacket) Write(w io.Writer) error {
 
 //Unpack decodes the details of a ControlPacket after the fixed
 //header has been read
-func (d *DisconnectPacket) Unpack(b io.Reader) {
+func (d *DisconnectPacket) Unpack(src []byte) {
 }
 
 //Details returns a Details struct containing the Qos and
