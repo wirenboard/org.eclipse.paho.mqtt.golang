@@ -22,10 +22,11 @@ import (
 // Internal levels of library output that are initialised to not print
 // anything but can be overridden by programmer
 var (
-	ERROR    *log.Logger
-	CRITICAL *log.Logger
-	WARN     *log.Logger
-	DEBUG    *log.Logger
+	ERROR              *log.Logger
+	CRITICAL           *log.Logger
+	WARN               *log.Logger
+	DEBUG              *log.Logger
+	initialDebugLogger *log.Logger
 )
 
 func init() {
@@ -33,4 +34,9 @@ func init() {
 	CRITICAL = log.New(ioutil.Discard, "", 0)
 	WARN = log.New(ioutil.Discard, "", 0)
 	DEBUG = log.New(ioutil.Discard, "", 0)
+	initialDebugLogger = DEBUG
+}
+
+func debugActive() bool {
+	return DEBUG != initialDebugLogger
 }
