@@ -91,6 +91,19 @@ func incoming(c *Client) {
 		if cp, err = packets.ReadPacket(reader); err != nil {
 			break
 		}
+		// Make sure the client isn't stopped yet. There still
+		// can be some packets in the buffer after c.conn is
+		// closed, so don't try to send more than 1 packet to
+		// ibound after the connection is closed. A single
+		// packet can still pass through if the socket is
+		// closed after this select.
+		select {
+		case <-c.stop:
+			DEBUG.Println(NET, "incoming stopped")
+			return
+		default:
+		}
+		// Not trying to disconnect, send the error to the errors channel
 		if debugActive() {
 			DEBUG.Println(NET, "Received Message")
 		}

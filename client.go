@@ -220,7 +220,14 @@ func (c *Client) Connect() Token {
 
 		c.obound = make(chan *PacketAndToken, c.options.MessageChannelDepth)
 		c.oboundP = make(chan *PacketAndToken, c.options.MessageChannelDepth)
-		c.ibound = make(chan packets.ControlPacket)
+		// Add some depth to ibound channel to prevent incoming goroutine
+		// from locking up during shutdown. There's possible race condition
+		// when alllogic is already stopped but incoming is trying to
+		// send one more message that was just read to ibound. The worst case
+		// scenario is when the whole input buffer is filled with incoming
+		// messages, that being at most IN_BUF_SIZE/2 messages. Add a bit
+		// more to be on the safe side.
+		c.ibound = make(chan packets.ControlPacket, IN_BUF_SIZE/2+10)
 		c.errors = make(chan error)
 		c.stop = make(chan struct{})
 		c.pingTimer = time.NewTimer(c.options.KeepAlive)
