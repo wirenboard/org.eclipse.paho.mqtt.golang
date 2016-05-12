@@ -76,10 +76,10 @@ type Client struct {
 	incomingPubChan chan *packets.PublishPacket
 	errors          chan error
 	stop            chan struct{}
+	resetPing       chan struct{}
+	resetPingResp   chan struct{}
 	persist         Store
 	options         ClientOptions
-	pingTimer       *time.Timer
-	pingRespTimer   *time.Timer
 	status          connStatus
 	workers         sync.WaitGroup
 }
@@ -230,9 +230,6 @@ func (c *Client) Connect() Token {
 		c.ibound = make(chan packets.ControlPacket, IN_BUF_SIZE/2+10)
 		c.errors = make(chan error)
 		c.stop = make(chan struct{})
-		c.pingTimer = time.NewTimer(c.options.KeepAlive)
-		c.pingRespTimer = time.NewTimer(time.Duration(10) * time.Second)
-		c.pingRespTimer.Stop()
 
 		c.incomingPubChan = make(chan *packets.PublishPacket, c.options.MessageChannelDepth)
 		c.msgRouter.matchAndDispatch(c.incomingPubChan, c.options.Order, c)
@@ -247,7 +244,11 @@ func (c *Client) Connect() Token {
 			go c.options.OnConnect(c)
 		}
 
+		c.resetPing = nil
+		c.resetPingResp = nil
 		if c.options.KeepAlive != 0 {
+			c.resetPing = make(chan struct{})
+			c.resetPingResp = make(chan struct{})
 			c.workers.Add(1)
 			go keepalive(c)
 		}
@@ -333,7 +334,6 @@ func (c *Client) reconnect() {
 		}
 	}
 
-	c.pingTimer.Reset(c.options.KeepAlive)
 	c.stop = make(chan struct{})
 
 	c.workers.Add(1)
@@ -346,7 +346,11 @@ func (c *Client) reconnect() {
 		go c.options.OnConnect(c)
 	}
 
+	c.resetPing = nil
+	c.resetPingResp = nil
 	if c.options.KeepAlive != 0 {
+		c.resetPing = make(chan struct{})
+		c.resetPingResp = make(chan struct{})
 		c.workers.Add(1)
 		go keepalive(c)
 	}

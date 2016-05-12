@@ -207,7 +207,9 @@ func outgoing(c *Client) {
 			packetsSent += 1
 		}
 		// Reset ping timer after sending control packet.
-		c.pingTimer.Reset(c.options.KeepAlive)
+		if c.resetPing != nil {
+			c.resetPing <- struct{}{}
+		}
 	}
 }
 
@@ -235,8 +237,9 @@ func alllogic(c *Client) {
 				if debugActive() {
 					DEBUG.Println(NET, "received pingresp")
 				}
-				c.pingRespTimer.Stop()
-				c.pingTimer.Reset(c.options.PingTimeout)
+				if c.resetPingResp != nil {
+					c.resetPingResp <- struct{}{}
+				}
 				msg.Release()
 			case *packets.SubackPacket:
 				sa := msg.(*packets.SubackPacket)
